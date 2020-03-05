@@ -33,6 +33,13 @@
 	</build>
 	
 	<dependencies>
+	
+		<dependency>
+		    <groupId>org.apache.tomcat</groupId>
+		    <artifactId>tomcat-catalina</artifactId>
+		    <version>8.0.8</version>
+		</dependency>
+	    
 		<!-- spring核心包 -->
 		<dependency>
 			<groupId>org.springframework</groupId>
