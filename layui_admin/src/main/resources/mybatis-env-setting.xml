@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>  
+<!DOCTYPE configuration   
+    PUBLIC "-//mybatis.org//DTD Config 3.0//EN"   
+    "http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<configuration>
+
+	<settings>
+		<!-- 设置但JDBC类型为空时,某些驱动程序 要指定值,default:OTHER，插入空值时不需要指定类型 -->
+		<setting name="jdbcTypeForNull" value="NULL" />
+		<!-- 是否打印sql -->
+		<setting name="logImpl" value="STDOUT_LOGGING" />
+	</settings>
+
+	<typeAliases>
+		<!-- <typeAlias type="com.hx.entity.User" alias="user"/> -->
+		<!-- <package name="com.hx.entity"/> -->
+		<!-- 在批量起别名中，可以使用@Alias("user")为某个类起别名 如：hx.entity中有User类，entity子包下hx.entity.children还有一个User，如果只使用<package 
+			name="com.hx.entity"/> 运行会报错，因为识别不了是否指定那个user,两个User类的别名都相同，所有可以使用@Alias("users")在某个类上从新起别名 -->
+	</typeAliases>
+
+	<!-- 配置分页插件 -->
+    <plugins>
+        <plugin interceptor="com.github.pagehelper.PageHelper">
+            <!-- 设置数据库类型 Oracle,Mysql,MariaDB,SQLite,Hsqldb,PostgreSQL六种数据库-->
+            <property name="dialect" value="mysql"/>
+        </plugin>
+    </plugins>
+</configuration> 

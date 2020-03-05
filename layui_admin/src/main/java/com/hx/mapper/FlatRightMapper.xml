@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hx.dao.FlatRightDao">
+   
+   <!-- 通过管理员账号获取权限菜单集合 -->
+   <select id="getMenuRightListbyAccount" resultType="com.hx.entity.TblRightInfo">
+     SELECT 
+       ri.rightid,
+       ri.rightname,
+       ri.icon 
+       FROM  tbl_role_right rr,
+             tbl_right_info ri 
+       WHERE 
+             rr.rightid=ri.rightid 
+       AND 
+             ri.isenabled=1 
+       AND rr.roleid 
+       IN 
+          (SELECT roleid FROM tbl_manager_info m,tbl_role_info r WHERE m.account=r.account AND m.account=#{account}) 
+       ORDER BY 
+          ri.sort 
+        ASC
+   </select>
+   
+   <select id="getResourceListbyRightid" resultType="com.hx.entity.TblResourceInfo">
+      SELECT 
+        ri.resourid,
+        ri.resourname,
+        ri.url 
+      FROM 
+         tbl_resource_info ri,
+         tbl_right_resource rr 
+       WHERE 
+         ri.resourid=rr.resourid 
+       AND 
+          rr.rightid=#{rightid}
+   </select>
+   <!--根据账号查找管理员基本信息  -->
+   <select id="queryManager" resultType="com.hx.entity.TblManagerInfo">
+      SELECT*FROM tbl_manager_info manager where manager.account=#{account}
+   </select>
+   <!--根据id查找管理员基本信息  -->
+   <select id="findRightById" resultType="com.hx.entity.TblRightInfo">
+      SELECT*FROM tbl_right_info  WHERE rightid=#{rightid}
+   </select>
+   <!--  查询权限列表 -->
+   <select id="rightList" resultType="com.hx.entity.TblRightInfo" parameterType="map">
+      SELECT*FROM tbl_right_info
+      <where>
+	      <if test="rightname!=null and rightname!='' ">
+	         rightname LIKE CONCAT('%',#{rightname},'%')
+	      </if>
+      </where>
+      ORDER BY sort ASC
+   </select>
+   <!-- 添加权限 -->
+   <insert id="addRight" parameterType="com.hx.entity.TblRightInfo">
+       INSERT INTO tbl_right_info(rightname,icon,sort,isenabled) VALUES(#{rightname},#{icon},#{sort},#{isenabled})
+   </insert>
+   <!-- 删除权限 -->
+   <delete id="delRightById">
+      DELETE FROM tbl_right_info WHERE rightid=#{rightid}
+   </delete>
+   <!--修改权限  -->
+   <update id="editRight" parameterType="com.hx.entity.TblRightInfo">
+      UPDATE tbl_right_info SET rightname=#{rightname},icon=#{icon},sort=#{sort},isenabled=#{isenabled} WHERE rightid=#{rightid}
+   </update>
+</mapper>

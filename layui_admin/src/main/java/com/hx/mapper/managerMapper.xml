@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hx.dao.ManagerDao">
+  
+  <!-- 查询超管列表 -->
+  <select id="managerList" resultType="map" >
+     SELECT m.*,r.rolename FROM 
+         tbl_manager_info m
+        INNER JOIN 
+           tbl_role_info  r
+         ON 
+           m.account=r.account
+         AND 
+           m.type='0'
+           <if test="account!=null and account!='' ">
+              AND m.account=#{account}
+           </if>
+          ORDER BY 
+             m.createdtime 
+           DESC
+  </select>
+  
+  <!-- 查询添加时当前登录员权限集合 -->
+  <select id="queryAddMangerResource" resultType="com.hx.entity.TblRightInfo">
+     SELECT 
+       ri.rightid,ri.rightname 
+     FROM 
+       tbl_role_right rr,tbl_right_info ri 
+     WHERE 
+        rr.rightid=ri.rightid 
+     AND 
+       ri.isenabled=1 
+     AND 
+       rr.roleid 
+     IN 
+       (SELECT
+          roleid 
+        FROM 
+           tbl_manager_info m,tbl_manager_role mr 
+         WHERE 
+           m.managerid=mr.managerid 
+         AND 
+           m.managerid=#{managerid}) 
+         ORDER BY 
+            ri.sort asc
+  </select>
+  <!-- 查询账号是否存在 -->
+  <select id="queryManagerCount" resultType="_int">
+     SELECT 
+        COUNT(1) 
+      FROM 
+         tbl_manager_info 
+       WHERE 
+          account=#{account}
+  </select>
+  <!-- 根据管理员id查询管理员基本信息 -->
+  <select id="findManagerById" resultType="tblManagerInfo">
+    SELECT*FROM tbl_manager_info WHERE managerid=#{managerid}
+  </select>
+  <!-- 查询当前登录人拥有的权限集 -->
+  <select id="getParentRightListbyManagerId" resultType="com.hx.entity.TblRightInfo">
+    SELECT ri.rightid,ri.rightname FROM tbl_role_right rr,tbl_right_info ri WHERE rr.rightid=ri.rightid AND ri.isenabled=1 AND rr.roleid IN (SELECT roleid FROM tbl_manager_info m,tbl_manager_role mr WHERE m.managerid=mr.managerid AND m.managerid=#{managerid}) ORDER BY ri.sort asc
+  </select>
+  <!-- 查询修改账号拥有的权限集 -->
+  <select id="getSelfRightListbyManagerId" resultType="com.hx.entity.TblRightInfo">
+    SELECT ri.rightid,ri.rightname FROM tbl_role_right rr,tbl_right_info ri WHERE rr.rightid=ri.rightid AND ri.isenabled=1 AND rr.roleid IN (SELECT roleid FROM tbl_manager_info m,tbl_manager_role mr WHERE m.managerid=mr.managerid AND m.managerid=#{managerid}) ORDER BY ri.sort asc
+  </select>
+  <!--查询该公司的权限  -->
+  <select id="managerRoleListByManagerId" resultType="long">
+    SELECT roleid FROM tbl_manager_role WHERE managerid=#{managerid}
+  </select>
+  <!--查询角色基本信息  -->
+  <select id="findRoleById" resultType="tblRoleInfo">
+     SELECT * FROM tbl_role_info WHERE roleid=#{roleid}
+  </select>
+  <!-- 查询角色基本信息 by account -->
+  <select id="findRoleByAccount" resultType="tblRoleInfo">
+     SELECT * FROM tbl_role_info WHERE account=#{account}
+  </select>
+  <!-- 查询所有权限集合 -->
+  <select id="queryAdminRight" resultType="com.hx.entity.TblRightInfo">
+     SELECT * FROM tbl_right_info
+  </select>
+  
+  <!--添加平台管理员   返回主键-->
+  <insert id="savePTManager" parameterType="tblManagerInfo" useGeneratedKeys="true" keyProperty="managerid">
+     INSERT INTO tbl_manager_info
+       (mparentid,type,enabled,companyname,linkman,linkphone,account,password,provinceid,provincename,cityid,cityname,countyid,cuntryname,createdtime)
+      VALUES
+        (#{mparentid},#{type},#{enabled},#{companyname},#{linkman},#{linkphone},#{account},#{password},#{provinceid},#{provincename},#{cityid},#{cityname},#{countyid},#{cuntryname},#{createdtime})
+  </insert>
+  <!--添加角色信息  -->
+  <insert id="saveRole" parameterType="tblRoleInfo" useGeneratedKeys="true" keyProperty="roleid">
+    INSERT INTO tbl_role_info
+      (account,rolename,createdtime)
+     VALUES
+       (#{account},#{rolename},#{createdtime})
+  </insert>
+  <!--保存角色管理员关系  -->
+  <insert id="saveManagerRole" parameterType="tblManagerRole" >
+    INSERT INTO tbl_manager_role
+      (managerid,roleid)
+     VALUES
+       (#{managerid},#{roleid})
+  </insert>
+  <!--保存保存角色权限  -->
+  <insert id="saveRoleRight" parameterType="tblRoleRight" >
+    INSERT INTO tbl_role_right
+      (roleid,rightid)
+     VALUES
+       (#{roleid},#{rightid})
+  </insert>
+  <!--修改平台管理员  -->
+  <update id="updateManagerById" parameterType="tblManagerInfo">
+     UPDATE 
+       tbl_manager_info 
+       <trim prefix="set" suffixOverrides=",">
+	       <if test="linkman!=null and linkman!='' ">
+	          linkman=#{linkman},
+	       </if>
+	       <if test="account!=null and account!='' ">
+	          account=#{account},
+	       </if>
+	        <if test="linkphone!=null and linkphone!='' ">
+	          linkphone=#{linkphone},
+	       </if>
+	        <if test="password!=null and password!='' ">
+	          password=#{password},
+	       </if>
+       </trim>
+       WHERE managerid=#{managerid}
+  </update>
+  <!-- 修改角色基本信息 -->
+  <update id="updateRoleById" parameterType="tblRoleInfo">
+     UPDATE tbl_role_info SET rolename=#{rolename},account=#{account} WHERE roleid=#{roleid}
+  </update>
+  <!-- 通过角色ID删除权限关系集 -->
+  <delete id="delRoleRightByRoleId">
+     DELETE FROM tbl_role_right WHERE roleid=#{roleid}
+  </delete>
+  <!-- 根据id删除管理员基本信息 -->
+  <delete id="delManagerById">
+     DELETE FROM tbl_manager_info WHERE managerid=#{managerid}
+  </delete>
+  <!--根据managerid删除管理员角色信息 -->
+  <delete id="delManagerRoleByManagerId">
+     DELETE FROM tbl_manager_role WHERE managerid=#{managerid}
+  </delete>
+  <!-- 根据账号删除角色信息 -->
+  <delete id="delRoleInfoByAccount">
+     DELETE FROM tbl_role_info WHERE account=#{account}
+  </delete>
+  <!--   删除角色关联菜单-->
+   <delete id="delRoleRight">
+    DELETE FROM tbl_role_right where roleid=#{roleid}
+  </delete>
+</mapper>

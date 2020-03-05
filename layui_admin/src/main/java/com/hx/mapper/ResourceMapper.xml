@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hx.dao.ResourceDao">
+  
+  <!-- 查询资源列表 -->
+   <select id="getResourceList" resultType="map">
+       SELECT re.*,rf.rightid,rf.rightname FROM tbl_resource_info re INNER JOIN tbl_right_resource ri ON re.resourid=ri.resourid INNER JOIN tbl_right_info rf ON ri.rightid=rf.rightid
+       <where>
+	      <if test="resourname!=null and resourname!='' ">
+	         re.resourname LIKE CONCAT('%',#{resourname},'%')
+	      </if>
+      </where>
+      ORDER BY re.resourid desc
+      </select>
+      <!-- 添加资源文件 -->
+    <insert id="addResource" useGeneratedKeys="true" keyProperty="resourid" parameterType="com.hx.entity.TblResourceInfo">
+       INSERT INTO tbl_resource_info(resourname,url) VALUES(#{resourname},#{url})
+   </insert>
+   <!-- 权限与资源关系 -->
+    <insert id="addRightAndResource" parameterType="com.hx.entity.TblRightResource">
+       INSERT INTO tbl_right_resource(resourid,rightid) VALUES(#{resourid},#{rightid})
+   </insert>
+   <!-- 修改资源 -->
+    <update id="editResource" parameterType="com.hx.entity.TblResourceInfo">
+      UPDATE tbl_resource_info SET resourname=#{resourname},url=#{url} WHERE resourid=#{resourid}
+   </update>
+   <!-- 删除资源信息 -->
+   <delete id="delResourceById">
+      DELETE FROM tbl_resource_info WHERE resourid=#{resourid}
+   </delete>
+   <!-- 删除资源权限信息 -->
+   <delete id="delRightAndResource">
+      DELETE FROM tbl_right_resource WHERE resourid=#{resourid}
+   </delete>
+</mapper>

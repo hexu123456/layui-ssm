@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+ <!--  
+    1. 配置 SecurityManager!
+    -->     
+    <bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+      <!--   <property name="cacheManager" ref="cacheManager"/> -->
+        <property name="realms" ref="jdbcRealm"></property>
+        <!-- 设置记住我功能时间限制  设置为10天 -->
+        <property name="rememberMeManager.cookie.maxAge" value="864000000"></property>
+    </bean>
+
+    <!-- Let's use some enterprise caching support for better performance.  You can replace this with any enterprise
+         caching framework implementation that you like (Terracotta+Ehcache, Coherence, GigaSpaces, etc -->
+    <!--  
+    2. 配置 CacheManager. 
+    2.1 需要加入 ehcache 的 jar 包及配置文件. 
+    -->     
+ <!--    <bean id="cacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager">
+        <property name="cacheManagerConfigFile" value="classpath:ehcache.xml"/> 
+    </bean> -->
+    <!-- 
+    	3. 配置 Realm 
+    	3.1 直接配置实现了 org.apache.shiro.realm.Realm 接口的 bean
+    -->     
+    <bean id="jdbcRealm" class="com.hx.shiro.ShiroRealms">
+       	<!--配置加密 -->
+		<property name="credentialsMatcher">
+			<bean class="org.apache.shiro.authc.credential.HashedCredentialsMatcher">
+				<property name="hashAlgorithmName" value="MD5"></property>
+				<!--指定加密的次数为1000次-->
+				<property name="hashIterations" value="1024"></property>
+			</bean>
+		</property>
+    </bean>
+    <!--  
+    4. 配置 LifecycleBeanPostProcessor. 可以自定的来调用配置在 Spring IOC 容器中 shiro bean 的生命周期方法. 
+    -->       
+    <bean id="lifecycleBeanPostProcessor" class="org.apache.shiro.spring.LifecycleBeanPostProcessor"/>
+
+    <!--  
+    5. 启用 IOC 容器中使用 shiro 的注解. 但必须在配置了 LifecycleBeanPostProcessor 之后才可以使用. 
+    -->     
+    <bean class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator"
+          depends-on="lifecycleBeanPostProcessor"/>
+    <bean class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+        <property name="securityManager" ref="securityManager"/>
+    </bean>
+
+    <!--  
+    6. 配置 ShiroFilter. 
+    6.1 id 必须和 web.xml 文件中配置的 DelegatingFilterProxy 的 <filter-name> 一致.
+                      若不一致, 则会抛出: NoSuchBeanDefinitionException. 因为 Shiro 会来 IOC 容器中查找和 <filter-name> 名字对应的 filter bean.
+    -->     
+    <bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+        <property name="securityManager" ref="securityManager"/>
+        <!-- 要求登录时的链接(可根据项目的URL进行替换),非必须的属性,默认会自动寻找Web工程根目录下的"/login.jsp"页面 -->  
+        <property name="loginUrl" value="/login.jsp"/>
+         <!-- 登录成功后要跳转的连接 -->    
+        <property name="successUrl" value="/admin/main"/>
+        <!-- 用户访问未对其授权的资源时,所显示的连接 -->    
+        <!-- 若想更明显的测试此属性可以修改它的值,如unauthor.jsp,然后用[玄玉]登录后访问/admin/listUser.jsp就看见浏览器会显示unauthor.jsp --> 
+        <property name="unauthorizedUrl" value="/403"/>
+        
+        <!--只有login.jsp页面可以访问，其他页面均不能访问，相当于过滤器  -->
+          <!--  <property name="filterChainDefinitions">
+            <value>
+                /login.jsp = anon
+                /assets/** = anon
+                /images/** = anon
+                /login/auth = anon
+                /css/** = anon
+                /js/** = anon
+                /img/** = anon
+                /json/** = anon
+                /fonts/** = anon
+                /shiro/logout = logout
+                # everything else requires authentication:
+                /** = authc
+            </value> 
+        </property>-->
+        <!-- 引用配置的factoryfilterChainDefinitions 控制权限-->
+        <property name="filterChainDefinitionMap" ref="filterChainDefinitionMap"></property>
+    </bean>
+    <!-- 配置实例工厂类,通过实例工厂的方式 -->
+    <bean id="factoryfilterChainDefinitions" class="com.hx.shiro.FactoryfilterChainDefinitions"></bean>
+    <bean id="filterChainDefinitionMap" factory-bean="factoryfilterChainDefinitions" factory-method="FilterChainDefinitionMap"></bean>
+
+    
+</beans>

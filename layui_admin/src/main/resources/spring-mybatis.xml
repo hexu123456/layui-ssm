@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:mybatis-spring="http://mybatis.org/schema/mybatis-spring"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.2.xsd
+		http://mybatis.org/schema/mybatis-spring http://mybatis.org/schema/mybatis-spring-1.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.2.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.2.xsd">
+
+	<!-- 1.读取jdbc资源文件 -->
+	<context:property-placeholder location="classpath:jdbc.properties" />
+	<!-- 2.配置数据源 -->
+	<bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+		<property name="url" value="${jdbc.url}" />
+		<property name="username" value="${jdbc.username}" />  <!-- ${jdbc_username} -->
+		<property name="password" value="${jdbc.password}" />  <!-- ${jdbc_password} -->
+
+		<!-- 初始化连接大小 -->
+		<property name="initialSize" value="${jdbc.initialSize}"></property>
+		<!-- 连接池最大数量 -->
+		<property name="maxActive" value="${jdbc.maxActive}"></property>
+		<!-- 连接池最大空闲 -->
+		<property name="maxIdle" value="${jdbc.maxIdle}"></property>
+		<!-- 连接池最小空闲 -->
+		<property name="minIdle" value="${jdbc.minIdle}"></property>
+		<!-- 获取连接最大等待时间 -->
+		<property name="maxWait" value="${jdbc.maxWait}"></property>
+		<property name="validationQuery" value="${validationQuery}" />
+		<!-- 监控数据库 URI监控TAB中，获取JDBC相关的SQL执行信息 -->
+		<property name="filters" value="stat" />
+
+		<!-- 连接属性 -->
+		<property name="connectionProperties">
+			<value>clientEncoding=UTF-8</value>
+		</property>
+	</bean>
+	<!--3.配置spring和mybatis结合 -->
+	<bean id="sqlSessionFactoryBean" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource"></property>
+		<!-- 自动扫描mapping.xml文件 -->
+		<property name="mapperLocations" value="classpath:com/hx/mapper/*.xml"></property>
+		<!-- 自动扫描mapping.xml对于的模型 它一般对应我们的实体类所在的包，这个时候会自动取对应包中不包括包名的简单类名作为包括包名的别名。 
+			多个package之间可以用逗号或者分号等来进行分隔（value的值一定要是包的全） -->
+		<property name="typeAliasesPackage" value="com.hx.entity" />
+		<!-- 返回map空字段 -->
+		<property name="configLocation" value="classpath:mybatis-env-setting.xml"></property>
+	</bean>
+	<mybatis-spring:scan base-package="com.hx.dao"></mybatis-spring:scan>
+
+	<!--基于注解配置日志,只需开启日志注解 -->
+	 <aop:aspectj-autoproxy></aop:aspectj-autoproxy>
+
+	<!-- 4.配置xml切面日志 -->
+	<!--切面类 -->
+	<!-- <bean id="logAspectXml" class="com.hx.aop.LogAspectXml"></bean> -->
+	<!-- 配置aop -->
+	<!-- <aop:config>
+		配置切面表达式
+		<aop:pointcut
+			expression="execution(* com.*.service.*.save*(..)) or execution(* com.*.service.*.add*(..)) or execution(* com.*.service.*.delete*(..)) or execution(* com.*.service.*.update*(..))"
+			id="pointcut" />
+		配置切面
+		<aop:aspect ref="logAspectXml" order="-2222">
+			method：切面类指定的方法
+			<aop:before method="doBefore" pointcut-ref="pointcut" />
+			<aop:after method="doAfter" pointcut-ref="pointcut" />
+			<aop:after-throwing method="doAfterThrowing"
+				pointcut-ref="pointcut" />
+			<aop:after-returning method="doAfterReturn"
+				pointcut-ref="pointcut" />
+		</aop:aspect>
+	</aop:config> -->
+
+	<!-- 5.配置事物 -->
+	<!-- 配置事物管理器 -->
+	<bean id="transactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource"></property>
+	</bean>
+	<!-- 配置事物属性 -->
+	<tx:advice id="transactionAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<!-- propagation:指定事物的传播行为，当事物方法被另外一个事物方法调用时，指定事物应该如何传播,默认为REQUIRED，使用调用方法的事物 
+				isolation:指定事物的隔离级别，默认为READ_COMMITTED(读已提交) readOnly:指定事物是否为只读 默认为false -->
+			<tx:method name="get*" propagation="NOT_SUPPORTED"
+				read-only="true" />
+			<tx:method name="find*" propagation="NOT_SUPPORTED"
+				read-only="true" />
+			<tx:method name="load*" propagation="NOT_SUPPORTED"
+				read-only="true" />
+			<tx:method name="search*" propagation="NOT_SUPPORTED"
+				read-only="true" />
+			<tx:method name="query*" propagation="NOT_SUPPORTED"
+				read-only="true" />
+			<tx:method name="sele*" propagation="NOT_SUPPORTED"
+				read-only="true" />
+			<tx:method name="*" propagation="REQUIRED" rollback-for="Exception" />
+		</tx:attributes>
+	</tx:advice>
+	<!-- 配置事物切入点 -->
+	<aop:config>
+		<aop:pointcut id="transactionPointcut" expression="execution(* com.*.service.*.*(..))" />
+		<aop:advisor pointcut-ref="transactionPointcut" 
+			advice-ref="transactionAdvice" />
+	</aop:config>
+
+
+
+</beans>
